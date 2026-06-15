@@ -10,8 +10,20 @@ import type { SceneId } from '@/types/scene';
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * 统一滚动驱动引擎：Lenis → GSAP ScrollTrigger → Zustand Store
- * 全程 Scroll-driven，每个 Scene 注册独立的 ScrollTrigger Timeline
+ * 统一滚动驱动引擎
+ *
+ * ## 架构
+ * 用户滚动 → Lenis（平滑惯性滚动）→ GSAP ScrollTrigger（scrub 进度映射）
+ * → Zustand Store（全局状态） → 3D 组件 useFrame（动画更新）
+ *
+ * ## 设计要点
+ * - Lenis 负责惯性平滑，避免原生滚动的步进感
+ * - 每个 `<section>` 对应一个 ScrollTrigger，scrub: 1.2 延迟跟随避免机械感
+ * - 全局 main 元素另有一个 ScrollTrigger 追踪整体进度 0-1
+ * - `setTimeout(500ms)` 等待 DOM 渲染完成后再注册触发器
+ *
+ * ## 清理
+ * 组件卸载时 kill 所有 ScrollTrigger + destroy Lenis + cancelAnimationFrame
  */
 export function useScrollEngine() {
   const lenisRef = useRef<Lenis | null>(null);

@@ -23,8 +23,24 @@ const ThreeCanvas = dynamic(
   }
 );
 
+/**
+ * 拼多多 3D 沉浸式企业门户 — 主页面
+ *
+ * ## 架构
+ * 本页面为 'use client' 组件，承载完整的 Scroll-driven 叙事体验：
+ * - 3D Canvas 层 (z=1): 固定全屏背景，Three.js 渲染
+ * - DOM 内容层 (z=10): 4 个语义化 <section>，每个 100vh
+ * - UI 叠加层 (z=20-30): 顶部导航、右侧圆点、进度条
+ *
+ * ## 数据流
+ * 用户滚动 → Lenis → GSAP ScrollTrigger → Zustand Store
+ * → useFrame (3D 组件) + React State (UI 组件)
+ *
+ * ## SEO
+ * <noscript> 降级内容保证搜索引擎可索引核心信息
+ */
 export default function HomePage() {
-  // 初始化滚屏引擎（Lenis + GSAP ScrollTrigger）
+  // 初始化滚屏引擎（Lenis + GSAP ScrollTrigger），注入 ScrollTrigger 到 4 个场景
   useScrollEngine();
 
   return (

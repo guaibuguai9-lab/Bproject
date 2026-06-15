@@ -8,6 +8,12 @@ import type { CameraKeyframe } from '@/types/scene';
 
 /**
  * 4 个场景的相机关键帧预设
+ *
+ * 每个场景对应不同的相机视角：
+ * - Scene 1 (hero): 近距离 Z=8, FOV=60 — 罗盘细节
+ * - Scene 2 (agri): 抬升 Y=3, Z=12, FOV=55 — 俯瞰农田
+ * - Scene 3 (temu): 高远 Y=7, Z=18, FOV=50 — 全球视野
+ * - Scene 4 (eco): 极远 Z=20, FOV=45 — 背景虚化
  */
 const CAMERA_KEYFRAMES: CameraKeyframe[] = [
   // Scene 1: 首页 — 近距离罗盘
