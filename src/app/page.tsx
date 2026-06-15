@@ -2,12 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { HeaderNav } from '@/components/ui/header-nav';
+import { SideNav } from '@/components/ui/side-nav';
 import { CTACards } from '@/components/ui/cta-cards';
 import { StatCard } from '@/components/ui/stat-card';
 import { ScrollProgress } from '@/components/ui/scroll-progress';
 import { LoadingScreen } from '@/components/shared/loading-screen';
 import { FallbackContent } from '@/components/shared/fallback-content';
 import { useScrollEngine } from '@/hooks/use-scroll-engine';
+import { useSceneStore } from '@/stores/scene-store';
 
 // 动态导入 3D Canvas — 关闭 SSR，避免 hydration 不匹配
 const ThreeCanvas = dynamic(
@@ -38,6 +40,29 @@ export default function HomePage() {
 
       {/* ===== 顶部导航 (z=30) ===== */}
       <HeaderNav />
+
+      {/* ===== 右侧场景圆点导航 (z=30) ===== */}
+      <SideNav />
+
+      {/* ===== 左侧品牌水印 ===== */}
+      <aside
+        aria-hidden="true"
+        className="
+          fixed left-6 md:left-10 bottom-32 z-20
+          hidden md:flex flex-col items-center gap-1
+          pointer-events-none select-none
+        "
+      >
+        <span
+          className="
+            text-[10rem] md:text-[14rem] font-black leading-none
+            text-white/[0.03] tracking-tighter
+          "
+          style={{ writingMode: 'vertical-rl' }}
+        >
+          PDD
+        </span>
+      </aside>
 
       {/* ===== 滚动进度条 (z=30) ===== */}
       <ScrollProgress />

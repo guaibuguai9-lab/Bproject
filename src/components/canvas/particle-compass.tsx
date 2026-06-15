@@ -47,8 +47,8 @@ export const ParticleCompass: React.FC = () => {
       let x: number, y: number, z: number;
       let color: THREE.Color;
 
-      if (mode < 0.25) {
-        // 模式 1: 核心球体 — 品牌红
+      if (mode < 0.20) {
+        // 模式 1 (20%): 核心球体 — 品牌红
         const radius = 0.3 + Math.random() * 0.4;
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.acos(2 * Math.random() - 1);
@@ -56,9 +56,9 @@ export const ParticleCompass: React.FC = () => {
         y = radius * Math.sin(phi) * Math.sin(theta);
         z = radius * Math.cos(phi);
         color = brandRed.clone().multiplyScalar(0.7 + Math.random() * 0.3);
-      } else if (mode < 0.5) {
-        // 模式 2: 螺旋环 — 多种颜色
-        const t = (mode - 0.25) / 0.25;
+      } else if (mode < 0.40) {
+        // 模式 2 (20%): 螺旋环 — 多种颜色
+        const t = (mode - 0.20) / 0.20;
         const angle = t * Math.PI * 6 + Math.random() * 0.5;
         const radius = 1.2 + Math.sin(t * Math.PI * 4) * 0.4 + Math.random() * 0.15;
         x = Math.cos(angle) * radius;
@@ -70,18 +70,18 @@ export const ParticleCompass: React.FC = () => {
         else if (colorMix < 0.66) color = globalBlue.clone();
         else color = brandRed.clone();
         color.multiplyScalar(0.6 + Math.random() * 0.4);
-      } else if (mode < 0.75) {
-        // 模式 3: 外围光晕 — 绿色农业粒子流（东北方向）
-        const t = (mode - 0.5) / 0.25;
-        const angle = t * Math.PI * 2 + Math.PI / 4; // 东北方向偏移
+      } else if (mode < 0.55) {
+        // 模式 3 (15%): 外围光晕 — 绿色农业粒子流（东北方向）
+        const t = (mode - 0.40) / 0.15;
+        const angle = t * Math.PI * 2 + Math.PI / 4;
         const radius = 1.8 + Math.random() * 0.8;
         const height = 0.5 + Math.random() * 1.5;
         x = Math.cos(angle) * radius;
         z = Math.sin(angle) * radius;
         y = height;
         color = agriGreen.clone().multiplyScalar(0.5 + Math.random() * 0.5);
-      } else {
-        // 模式 4: 外围网状 — 蓝色全球供应链粒子
+      } else if (mode < 0.70) {
+        // 模式 4 (15%): 外围网状 — 蓝色全球供应链粒子
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.random() * Math.PI;
         const radius = 1.5 + Math.random() * 1.2;
@@ -89,6 +89,28 @@ export const ParticleCompass: React.FC = () => {
         y = radius * Math.cos(phi) * 0.6;
         z = radius * Math.sin(phi) * Math.sin(theta);
         color = globalBlue.clone().multiplyScalar(0.5 + Math.random() * 0.5);
+      } else {
+        // 模式 5 (30%): 宽域环境粒子 — 填充屏幕两侧
+        // 水平方向大幅展开，纵深散布，极低亮度
+        const spreadX = (Math.random() - 0.5) * 16;       // X: -8 ~ +8
+        const spreadZ = (Math.random() - 0.5) * 8;        // Z: -4 ~ +4
+        const heightRange = (Math.random() - 0.5) * 5;    // Y: -2.5 ~ +2.5
+        x = spreadX;
+        z = spreadZ;
+        y = heightRange;
+
+        // 中性白 + 极低亮度，不抢核心罗盘焦点
+        const brightness = 0.08 + Math.random() * 0.12;
+        const tintRoll = Math.random();
+        if (tintRoll < 0.15) {
+          color = brandRed.clone().multiplyScalar(brightness);
+        } else if (tintRoll < 0.30) {
+          color = agriGreen.clone().multiplyScalar(brightness);
+        } else if (tintRoll < 0.45) {
+          color = globalBlue.clone().multiplyScalar(brightness);
+        } else {
+          color = neutralWhite.clone().multiplyScalar(brightness);
+        }
       }
 
       pos[i * 3] = x;
