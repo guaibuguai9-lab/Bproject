@@ -1,0 +1,179 @@
+'use client';
+
+import { useRef, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { useSceneStore } from '@/stores/scene-store';
+import * as THREE from 'three';
+
+/**
+ * 粒子罗盘核心 — Scene 1 主视觉
+ *
+ * 20,000 个粒子通过引力算法形成罗盘形状
+ * 按红/绿/蓝色谱分化，有机呼吸动画
+ */
+export const ParticleCompass: React.FC = () => {
+  const pointsRef = useRef<THREE.Points>(null);
+  const globalProgress = useSceneStore((s) => s.globalScrollProgress);
+  const sceneProgress = useSceneStore((s) => s.sceneProgress.hero);
+  const qualityTier = useSceneStore((s) => s.qualityTier);
+
+  // 根据画质等级确定粒子数量
+  const particleCount = useMemo(() => {
+    const counts: Record<string, number> = {
+      ultra: 30000,
+      high: 20000,
+      medium: 10000,
+      low: 4000,
+      static: 0,
+    };
+    return counts[qualityTier] ?? 10000;
+  }, [qualityTier]);
+
+  // 创建粒子几何体 — 螺旋环状罗盘
+  const { positions, colors } = useMemo(() => {
+    const pos = new Float32Array(particleCount * 3);
+    const col = new Float32Array(particleCount * 3);
+
+    // PDD 品牌色
+    const brandRed = new THREE.Color('#E02D1C');
+    const agriGreen = new THREE.Color('#00AA6C');
+    const globalBlue = new THREE.Color('#1A73E8');
+    const neutralWhite = new THREE.Color('#F5F5F5');
+
+    for (let i = 0; i < particleCount; i++) {
+      // 多种分布模式混合，形成罗盘形状
+      const mode = Math.random();
+
+      let x: number, y: number, z: number;
+      let color: THREE.Color;
+
+      if (mode < 0.25) {
+        // 模式 1: 核心球体 — 品牌红
+        const radius = 0.3 + Math.random() * 0.4;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        x = radius * Math.sin(phi) * Math.cos(theta);
+        y = radius * Math.sin(phi) * Math.sin(theta);
+        z = radius * Math.cos(phi);
+        color = brandRed.clone().multiplyScalar(0.7 + Math.random() * 0.3);
+      } else if (mode < 0.5) {
+        // 模式 2: 螺旋环 — 多种颜色
+        const t = (mode - 0.25) / 0.25;
+        const angle = t * Math.PI * 6 + Math.random() * 0.5;
+        const radius = 1.2 + Math.sin(t * Math.PI * 4) * 0.4 + Math.random() * 0.15;
+        x = Math.cos(angle) * radius;
+        z = Math.sin(angle) * radius;
+        y = (Math.random() - 0.5) * 0.6 + Math.sin(t * Math.PI * 3) * 0.5;
+
+        const colorMix = Math.random();
+        if (colorMix < 0.33) color = agriGreen.clone();
+        else if (colorMix < 0.66) color = globalBlue.clone();
+        else color = brandRed.clone();
+        color.multiplyScalar(0.6 + Math.random() * 0.4);
+      } else if (mode < 0.75) {
+        // 模式 3: 外围光晕 — 绿色农业粒子流（东北方向）
+        const t = (mode - 0.5) / 0.25;
+        const angle = t * Math.PI * 2 + Math.PI / 4; // 东北方向偏移
+        const radius = 1.8 + Math.random() * 0.8;
+        const height = 0.5 + Math.random() * 1.5;
+        x = Math.cos(angle) * radius;
+        z = Math.sin(angle) * radius;
+        y = height;
+        color = agriGreen.clone().multiplyScalar(0.5 + Math.random() * 0.5);
+      } else {
+        // 模式 4: 外围网状 — 蓝色全球供应链粒子
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+        const radius = 1.5 + Math.random() * 1.2;
+        x = radius * Math.sin(phi) * Math.cos(theta);
+        y = radius * Math.cos(phi) * 0.6;
+        z = radius * Math.sin(phi) * Math.sin(theta);
+        color = globalBlue.clone().multiplyScalar(0.5 + Math.random() * 0.5);
+      }
+
+      pos[i * 3] = x;
+      pos[i * 3 + 1] = y;
+      pos[i * 3 + 2] = z;
+      col[i * 3] = color.r;
+      col[i * 3 + 1] = color.g;
+      col[i * 3 + 2] = color.b;
+    }
+
+    return { positions: pos, colors: col };
+  }, [particleCount]);
+
+  // 创建粒子材质
+  const material = useMemo(() => {
+    // 创建圆形粒子纹理
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d')!;
+    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.15, 'rgba(255, 255, 255, 0.9)');
+    gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.5)');
+    gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.1)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 32, 32);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+
+    return new THREE.PointsMaterial({
+      size: 0.04,
+      map: texture,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.9,
+    });
+  }, []);
+
+  // 动画循环
+  useFrame((state, delta) => {
+    const points = pointsRef.current;
+    if (!points) return;
+
+    // 基础自转
+    points.rotation.y += delta * 0.15;
+    points.rotation.x += delta * 0.03;
+
+    // 呼吸效果 — Scene 1 活跃时最强
+    const heroActivity = sceneProgress < 0.3 ? 1 : Math.max(0, 1 - (sceneProgress - 0.3) / 0.4);
+    const breathe = 1 + Math.sin(state.clock.elapsedTime * 1.5) * 0.03 * heroActivity;
+    const scale = breathe;
+
+    // Scene 4: 缩小并退场
+    const shrinkFactor = globalProgress > 0.75
+      ? 1 - (globalProgress - 0.75) / 0.25
+      : 1;
+    points.scale.setScalar(scale * Math.max(0.15, shrinkFactor));
+
+    // 透明度随全局进度衰减
+    material.opacity = globalProgress > 0.7
+      ? 0.9 * (1 - (globalProgress - 0.7) / 0.3)
+      : 0.9;
+  });
+
+  // 可见性控制
+  const visible = globalProgress < 0.9;
+
+  return (
+    <points ref={pointsRef} visible={visible}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          args={[colors, 3]}
+        />
+      </bufferGeometry>
+      <primitive object={material} attach="material" />
+    </points>
+  );
+};
